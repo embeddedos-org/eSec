@@ -2,11 +2,36 @@
 
 Security framework for the EmbeddedOS platform — reusable security services above the boot chain.
 
-**Status: Planned.** There is no implementation in this repository yet. The
-code that will become eSec lives in [`eos`](https://github.com/embeddedos-org/eos)
-today, at `services/security/ and services/crypto/`.
+**Status: Implemented, with one part Experimental — in
+[`eos`](https://github.com/embeddedos-org/eos), at `services/crypto/`.** Not here.
 
-This repository exists so the component has a home, an issue tracker, and a
+Under §28, *Implemented* means "feature exists and is usable", evidenced by code
+and functional tests. The crypto services meet that: 15 source files and seven
+test suites — `test_crypto`, `_aes`, `_ecc`, `_rsa`, `_sha512`,
+`_ed25519_loworder`, `_failclosed` — all passing.
+
+One part is **Experimental** rather than Implemented, and should not be read as
+finished: package signature verification. `services/pkg/eos_pkg.c` verifies
+against `eos_pkg_public_key[32] = {0}`, an all-zero trust anchor, and the
+low-order-key rejection that makes such a key fail closed rather than open was
+only just added (embeddedos-org/eos#99). Tracked as embeddedos-org/eos#98. A
+verifier with no real key authenticates nothing, and this README should not
+imply otherwise.
+
+Depend on eSec through a **component manifest**, not through this repository —
+see embeddedos-org/embeddedos-stack#20. The v2.0 master design is direct:
+
+> §10: **Repositories should not be the dependency API.**
+
+> §21.1: A subsystem earns a separate repository when it has a stable interface,
+> independent release lifecycle, clear maintainers and multiple consumers.
+
+None of those four holds for eSec today, and the cost of splitting anyway is
+already visible: there are two independent Ed25519 implementations in the
+platform, in eos and eBoot, and the same low-order-key bypass was present in
+both. Duplication across repositories is how one fix stops being one fix.
+
+This repository exists so the component has an issue tracker and a
 place to record decisions before any code moves. It is deliberately not a
 mirror: duplicating the sources here would give the platform two copies to
 keep in step, and §24 of the architecture document is explicit that internal
