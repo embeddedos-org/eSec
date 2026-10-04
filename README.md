@@ -47,6 +47,13 @@ Until then, work on eSec happens in `eos`. Opening the split earlier would
 cost a release cycle, a CI pipeline and a versioning story for a component
 whose interface is still changing.
 
+## Security
+
+eSec is the home for platform security policy. To report a vulnerability,
+see [SECURITY.md](SECURITY.md) (coordinated disclosure policy),
+[docs/cvd-intake.md](docs/cvd-intake.md) (report template), and
+[.well-known/security.txt](.well-known/security.txt) (RFC 9116 contact).
+
 ## Reference
 
 - Architecture & Ecosystem Design Document — §11 (Platform / Core)
