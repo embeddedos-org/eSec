@@ -2,11 +2,41 @@
 
 Security framework for the EmbeddedOS platform — reusable security services above the boot chain.
 
-**Status: Planned.** There is no implementation in this repository yet. The
-code that will become eSec lives in [`eos`](https://github.com/embeddedos-org/eos)
-today, at `services/security/ and services/crypto/`.
+**Status: Implemented in [`eos`](https://github.com/embeddedos-org/eos), at
+`services/crypto/`, except package signature verification
+(`services/pkg/eos_pkg.c`), which is Experimental.** Not here.
 
-This repository exists so the component has a home, an issue tracker, and a
+Under §28, *Implemented* means "feature exists and is usable", evidenced by code
+and functional tests. The crypto services meet that: 16 source files (10 `.c`, 6 internal headers) and seven
+test suites — `test_crypto`, `_aes`, `_ecc`, `_rsa`, `_sha512`,
+`_ed25519_loworder`, `_failclosed` — all passing.
+
+The Experimental part is **package signature verification** in
+`services/pkg/eos_pkg.c`. It is not one of the crypto suites above, and it should
+not be read as finished. It no longer verifies against an all-zero key
+(embeddedos-org/eos#120 removed it, and embeddedos-org/eos#99 made such a key
+fail closed). It now verifies only against a trust anchor the platform supplies,
+through `eos_pkg_set_trust_anchor()` or the build-time `EOS_PKG_TRUST_ANCHOR_HEX`.
+With neither, it refuses to verify. Only test and bring-up builds that set
+`EOS_ALLOW_UNSIGNED_PKG` skip verification. eos ships no key of its own, and the
+v2 signature envelope (covering header, binary and resources) landed only on
+2026-10-04, so this stays Experimental until a platform supplies a real anchor and
+the envelope has been exercised end to end. Tracked as embeddedos-org/eos#98.
+
+Depend on eSec through a **component manifest**, not through this repository —
+see embeddedos-org/embeddedos-stack#20. The v2.0 master design is direct:
+
+> §10: **Repositories should not be the dependency API.**
+
+> §21.1: A subsystem earns a separate repository when it has a stable interface,
+> independent release lifecycle, clear maintainers and multiple consumers.
+
+None of those four holds for eSec today, and the cost of splitting anyway is
+already visible: there are two independent Ed25519 implementations in the
+platform, in eos and eBoot, and the same low-order-key bypass was present in
+both. Duplication across repositories is how one fix stops being one fix.
+
+This repository exists so the component has an issue tracker and a
 place to record decisions before any code moves. It is deliberately not a
 mirror: duplicating the sources here would give the platform two copies to
 keep in step, and §24 of the architecture document is explicit that internal
