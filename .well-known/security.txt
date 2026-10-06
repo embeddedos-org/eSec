@@ -1,0 +1,4 @@
+Contact: https://github.com/embeddedos-org/eSec/security/advisories/new
+Expires: 2027-10-04T00:00:00.000Z
+Preferred-Languages: en
+Policy: https://github.com/embeddedos-org/eSec/blob/master/SECURITY.md
