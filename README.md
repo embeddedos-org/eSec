@@ -7,7 +7,7 @@ Security framework for the EmbeddedOS platform — reusable security services ab
 (`services/pkg/eos_pkg.c`), which is Experimental.** Not here.
 
 Under §28, *Implemented* means "feature exists and is usable", evidenced by code
-and functional tests. The crypto services meet that: 15 source files and seven
+and functional tests. The crypto services meet that: 16 source files (10 `.c`, 6 internal headers) and seven
 test suites — `test_crypto`, `_aes`, `_ecc`, `_rsa`, `_sha512`,
 `_ed25519_loworder`, `_failclosed` — all passing.
 
