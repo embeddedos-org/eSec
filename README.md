@@ -2,21 +2,26 @@
 
 Security framework for the EmbeddedOS platform — reusable security services above the boot chain.
 
-**Status: Implemented, with one part Experimental — in
-[`eos`](https://github.com/embeddedos-org/eos), at `services/crypto/`.** Not here.
+**Status: Implemented in [`eos`](https://github.com/embeddedos-org/eos), at
+`services/crypto/`, except package signature verification
+(`services/pkg/eos_pkg.c`), which is Experimental.** Not here.
 
 Under §28, *Implemented* means "feature exists and is usable", evidenced by code
 and functional tests. The crypto services meet that: 15 source files and seven
 test suites — `test_crypto`, `_aes`, `_ecc`, `_rsa`, `_sha512`,
 `_ed25519_loworder`, `_failclosed` — all passing.
 
-One part is **Experimental** rather than Implemented, and should not be read as
-finished: package signature verification. `services/pkg/eos_pkg.c` verifies
-against `eos_pkg_public_key[32] = {0}`, an all-zero trust anchor, and the
-low-order-key rejection that makes such a key fail closed rather than open was
-only just added (embeddedos-org/eos#99). Tracked as embeddedos-org/eos#98. A
-verifier with no real key authenticates nothing, and this README should not
-imply otherwise.
+The Experimental part is **package signature verification** in
+`services/pkg/eos_pkg.c`. It is not one of the crypto suites above, and it should
+not be read as finished. It no longer verifies against an all-zero key
+(embeddedos-org/eos#120 removed it, and embeddedos-org/eos#99 made such a key
+fail closed). It now verifies only against a trust anchor the platform supplies,
+through `eos_pkg_set_trust_anchor()` or the build-time `EOS_PKG_TRUST_ANCHOR_HEX`.
+With neither, it refuses to verify. Only test and bring-up builds that set
+`EOS_ALLOW_UNSIGNED_PKG` skip verification. eos ships no key of its own, and the
+v2 signature envelope (covering header, binary and resources) landed only on
+2026-10-04, so this stays Experimental until a platform supplies a real anchor and
+the envelope has been exercised end to end. Tracked as embeddedos-org/eos#98.
 
 Depend on eSec through a **component manifest**, not through this repository —
 see embeddedos-org/embeddedos-stack#20. The v2.0 master design is direct:
