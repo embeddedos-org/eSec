@@ -34,12 +34,44 @@ In other words: even a spec-conformant MCP deployment cannot be assumed safe.
    post-disclosure.)
 5. **No implicit intra-network trust.** Agents and servers inside the same
    network do not trust each other by default; every call re-authenticates.
+6. **Tool-registration command allowlists.** Any tool registration that can
+   cause command execution declares the exact commands/paths allowed; a
+   config-supplied command is untrusted input, never interpolated into a
+   shell string. (CVE-2026-105697 below is the CVSS 9.9 proof this control
+   is load-bearing.)
 
 ## Evidence links
 
 - unite.ai — researcher disclosure on the MCP protocol gap.
 - techtimes (Oct 6) — 5 US federal MCP servers unpatched 6 weeks post-disclosure.
 - einpresswire — ClawSecure AI Agent Threat Report Vol 1.
+- CVE-2026-105697 (CVSS 9.9, Oct 5) — Langflow MCP server config executed
+  the user-typed `command` via `bash -c` with no allowlist: config-file
+  command execution. Patch 1.10.3. Control 6 is the mitigation.
+- CVE-2026-104120 (Oct 2) — `mcp-server-fetch` <= 2026.6.4 SSRF via
+  `fetch_url`, publicly disclosed exploit. Fetch-style tools are network
+  egress: allowlisted destinations only.
+
+## Trust-track input: Logic Fruit L-Nex (2026-10-06)
+
+L-Nex is an FPGA-based OCP DC-SCM 2.x BMC running OpenBMC, announced with
+a hardware root of trust (secure + measured boot, attestation,
+NIST SP 800-193) and "a path to post-quantum cryptography without
+replacing the management architecture." Three angles for the eBoot/eSec
+trust tracks:
+
+1. **NIST SP 800-193 as the compliance anchor.** Protection, detection,
+   and recovery for firmware resiliency -- the same triad the KEV/CRA
+   docs already track. L-Nex shipping it in a BMC is the precedent for
+   requiring it in our boot design docs.
+2. **PQC crypto-agility without re-spin.** L-Nex's post-quantum path
+   argues for *measured-boot crypto agility* in eBoot: the boot chain
+   must be able to swap signature algorithms without a hardware
+   re-spin. The #162 envelope's algorithm agility is the software side
+   of this.
+3. **Measured boot + attestation as table stakes.** A BMC shipping
+   attestation in 2026 means our boot chain's attestation story is not
+   a differentiator -- it is the entry ticket.
 
 ## Standing KEV/CRA input
 
