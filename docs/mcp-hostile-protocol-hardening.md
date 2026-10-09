@@ -40,6 +40,27 @@ In other words: even a spec-conformant MCP deployment cannot be assumed safe.
    shell string. (CVE-2026-105697 below is the CVSS 9.9 proof this control
    is load-bearing.)
 
+## Threat taxonomy: the six MCP attack classes
+
+The Agentics' *Enterprise MCP Guide 2026* (Oct 5) names six attack
+classes — with 68 MCP server CVEs disclosed in one month as the
+backdrop. Each maps to an existing control above; the guide is the
+external validation of this posture.
+
+| # | Attack class | What it is | eSec control |
+|---|---|---|---|
+| 1 | **Tool poisoning** | A tool's description is altered to smuggle malicious instructions into the agent's context | Control 1 (allowlisted servers) + pinned descriptions at registration |
+| 2 | **Schema poisoning** | The declared parameter schema is widened beyond what the tool honestly accepts | Boundary schema validation — descriptors are validated, never trusted |
+| 3 | **Tool shadowing** | A lower-privilege tool overrides a higher-privilege tool's identity | Privilege-scoped registration: no shadowing across trust levels; collisions fail closed |
+| 4 | **Command injection** | Tool arguments become shell commands | Control 6 (command allowlists) — CVE-2026-105697 is the CVSS 9.9 proof |
+| 5 | **Shadow servers** | Rogue servers the agent discovers and trusts | Control 1 + Control 5 (no implicit intra-network trust; every call re-authenticates) |
+| 6 | **Context oversharing** | Tools receive more context than they need | Control 3 (credential isolation) + Control 4 (upstream redaction) |
+
+The guide's control set — per-agent allowlists, identity binding,
+centralized MCP gateways, human approval for destructive actions —
+is the day-one posture the agent-fabric gateway evaluation
+(`embeddedos-org/EoSim` `docs/mcp-gateway-eval.md`) now requires.
+
 ## Evidence links
 
 - unite.ai — researcher disclosure on the MCP protocol gap.
