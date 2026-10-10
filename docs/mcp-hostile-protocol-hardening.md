@@ -100,3 +100,27 @@ The monthly dev.to "Open-Source Device CVEs: What to Patch by Vertical"
 series is the standing human-readable layer over the KEV feed for
 bootloader-class upstreams (Mbed TLS, U-Boot, TF-A) and is tracked as part of
 the org's CRA-readiness posture.
+
+## Appendix: worked examples (October 2026)
+
+Timestamped, CVE-numbered proof the taxonomy above is live — not theoretical.
+
+**Langflow CVE-2026-105697 (CVSS 9.9, disclosed Oct 5).** OS command
+injection in MCP server handling: the stdio transport launched a
+user-supplied `command`/`args` pair via `bash -c` with no allowlist on the
+executable and no validation of the arguments. Public proof-of-concept;
+fixed in 1.10.3. The flaw was not in Langflow's business logic but in its
+*protocol handling* — which is why the command-injection control has to
+live at the trust boundary (allowlisted executables, declared at
+registration), not inside each tool. This is the class the eIPC
+tool-registration allowlist and the eVera tool-use policy exist for.
+
+**ClawSecure AI Agent Threat Report Vol 1 (Sept 24).** Three clean,
+production MCP implementations — Linear, Notion, Dropbox Dash — cracked
+with the same attack class. Three independent codebases, three vendors,
+one flaw shape: when the same class lands in three clean implementations,
+the defect is in the protocol's missing security requirements, not in any
+one implementation. That is the entire reason a hostile-protocol hardening
+document has to exist: the MCP spec's lack of normative security
+requirements pushes the security burden onto every implementer, and most
+implementers will not carry it.
