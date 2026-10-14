@@ -8,6 +8,11 @@ Checks (stdlib only):
      repo. GitHub-wiki-style extensionless links (e.g. `[Home](Home)`)
      resolve to `<page>.md` next to the linking file. Absolute URLs
      (http/https/mailto/...) and pure #anchors are skipped.
+  3. .well-known/security.txt carries the RFC 9116 mandatory fields
+     (Contact, Expires) and its Expires date is not in the past. An
+     expired security.txt silently breaks the CRA reporting path
+     documented in docs/cra-reporting.md, so expiry is a hard failure
+     here, not a warning that can age unnoticed.
 
 Exits non-zero with clear messages when anything fails.
 """
@@ -15,12 +20,14 @@ Exits non-zero with clear messages when anything fails.
 import os
 import re
 import sys
+from datetime import datetime, timezone
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS_DIR = os.path.join(REPO_ROOT, "docs")
 H1_EXEMPT = {os.path.join("docs", "wiki", "_Sidebar.md")}
 
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+SECURITY_TXT = os.path.join(REPO_ROOT, ".well-known", "security.txt")
 ABS_URL_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
 
 
@@ -81,12 +88,46 @@ def check_links(path, rel):
     return errors
 
 
+def check_security_txt():
+    """RFC 9116: Contact and Expires are mandatory; Expires must be future."""
+    errors = []
+    rel = ".well-known/security.txt"
+    if not os.path.isfile(SECURITY_TXT):
+        return ["%s: file is missing" % rel]
+    fields = {}
+    with open(SECURITY_TXT, encoding="utf-8") as fh:
+        for line in fh.read().splitlines():
+            if ":" in line and not line.lstrip().startswith("#"):
+                key, _, value = line.partition(":")
+                fields.setdefault(key.strip().lower(), value.strip())
+    for required in ("contact", "expires"):
+        if not fields.get(required):
+            errors.append("%s: RFC 9116 mandatory field '%s' is missing" % (rel, required))
+    raw_expires = fields.get("expires")
+    if raw_expires:
+        try:
+            expires = datetime.fromisoformat(raw_expires.replace("Z", "+00:00"))
+        except ValueError:
+            errors.append("%s: Expires '%s' is not a parseable RFC 3339 date" % (rel, raw_expires))
+            return errors
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        if expires <= datetime.now(timezone.utc):
+            errors.append(
+                "%s: Expires %s is in the past — an expired security.txt "
+                "breaks the CRA reporting path (docs/cra-reporting.md); "
+                "renew it before it lapses" % (rel, raw_expires)
+            )
+    return errors
+
+
 def main():
     files = doc_files()
     if not files:
         print("FAIL: no markdown docs found under docs/", file=sys.stderr)
         return 1
     errors = []
+    errors.extend(check_security_txt())
     for path in files:
         rel = os.path.relpath(path, REPO_ROOT)
         errors.extend(check_h1(path, rel))
