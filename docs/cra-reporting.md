@@ -91,6 +91,44 @@ Two CRA duties shape engineering before any incident:
 Both are design inputs to new products, reviewed like any other
 requirement — not paperwork reconstructed after an incident.
 
+## Worked timeline — MCP gateway auth-bypass class (hypothetical)
+
+A worked example, end to end, for the failure shape this org's
+agent fabric is most exposed to: an MCP gateway endpoint that
+accepts an asserted identity without proof — the spoofing class
+(CWE-290) behind the LiteLLM MCP auth-bypass vulnerability
+(CVE-2026-59822, KEV-listed September 2026, where a fabricated
+Bearer token opened an authenticated MCP session). **This is a
+hypothetical exercise against that pattern, not a report of an
+incident in any EmbeddedOS product.** Its point is to prove the
+clock above is achievable with the artifacts this repo maintains.
+
+Scenario: a future EmbeddedOS product ships with an MCP gateway
+component. A researcher reports — via the `security.txt`
+channel — that the gateway's session endpoint accepts a
+placeholder credential and opens a session, and demonstrates
+read access to a tool that should require authentication.
+Telemetry suggests the endpoint is reachable in deployed units.
+
+| Clock | Action | Artifact |
+|---|---|---|
+| T+0 h | Report received via the RFC 9116 contact; acknowledged to the reporter; incident opened | `security.txt` channel (above) |
+| T+2 h | Triage confirms the claim against the product build; gateway sessions revoked, affected tool disabled by configuration; credentials the gateway held are rotated | SBOM lookup answers "which products/versions ship the gateway" inside this window — that is what the SBOM duty above is for |
+| T+24 h | **Early warning** filed to the competent CSIRT / single reporting platform: vulnerability identified, products affected, exploitation suspected (a public proof exists) | CRA Art. 14 early warning — the 24-hour duty in "The clock" |
+| T+72 h | **Notification** filed with the fuller assessment: root cause (asserted identity accepted without verification), exposure window, mitigations shipped | CRA Art. 14 notification |
+| T+14 d | **Final report**: fix released (sessions require verified credentials; placeholder/asserted-only tokens are refused and logged), update pushed through the product's normal signed-update path, residual-risk note | CRA Art. 14 final report |
+
+Two lessons the exercise is designed to teach before it is real:
+
+- The 24-hour filing is only possible because the SBOM and the
+  `security.txt` channel already exist. Both are maintained in
+  quiet times (the `security.txt` expiry is CI-enforced in this
+  repo) or they do not exist at all.
+- The fix pattern is the same one the org applies to tensor
+  descriptors and update images: an identity claim is verified,
+  never trusted — and the regression test is a request with a
+  fabricated credential expecting refusal.
+
 ## What this page is not
 
 Legal advice. The CRA text and ENISA guidance are authoritative;
