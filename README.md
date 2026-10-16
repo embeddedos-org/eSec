@@ -79,6 +79,9 @@ whose interface is still changing.
 
 ## Security
 
+For agents and tools: [llms.txt](llms.txt) indexes this repository's
+security docs in one file.
+
 eSec is the home for platform security policy. To report a vulnerability,
 see [SECURITY.md](SECURITY.md) (coordinated disclosure policy),
 [docs/cvd-intake.md](docs/cvd-intake.md) (report template), and

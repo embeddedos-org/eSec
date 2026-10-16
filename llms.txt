@@ -1,0 +1,32 @@
+# eSec
+
+> llms.txt for the eSec repository (embeddedos-org/eSec).
+> Status: security framework for EmbeddedOS. The implementation
+> lives in `eos` (`services/security/` and `services/crypto/`);
+> this repository is the component's issue tracker and
+> decision record — it is deliberately not a code mirror.
+> Whether code moves here is issue #5, which is Aswin's call.
+
+eSec is the security framework of EmbeddedOS: reusable security
+services above the boot chain — crypto abstraction, key
+management, device identity, secure storage, capabilities and
+permissions, attestation, certificates/TLS integration, and
+TPM / secure element / HSM adapters. Today `eos` implements AES,
+SHA-256 and SHA-512 (NIST vectors passing); RSA and ECC signature
+verification are stubs that refuse to run unless a build defines
+`EOS_ALLOW_STUB_CRYPTO`, and ADR-012 (in `eos`) selects Mbed TLS
+to replace them.
+
+## Docs
+
+- [Security policy](SECURITY.md) — coordinated disclosure policy
+- [CRA reporting](docs/cra-reporting.md) — Cyber Resilience Act reporting obligations and the org's position
+- [CRA incident-reporting runbook](docs/cra-incident-reporting-runbook.md) — the operational runbook for CRA incident reports, with a worked timeline
+- [CVD intake](docs/cvd-intake.md) — coordinated vulnerability disclosure report template and intake process
+- [mbedTLS evaluation](docs/mbedtls-evaluation.md) — evaluation of Mbed TLS as the crypto provider (ADR-012)
+- [MCP hostile-protocol hardening](docs/mcp-hostile-protocol-hardening.md) — hardening notes for MCP protocol surfaces against hostile peers
+- [security.txt](.well-known/security.txt) — RFC 9116 security contact
+
+## Machine-readable
+
+- [llms.txt](llms.txt) — this file
