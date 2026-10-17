@@ -30,3 +30,4 @@ to replace them.
 ## Machine-readable
 
 - [llms.txt](llms.txt) — this file
+- [llms-full.txt](llms-full.txt) — the docs above concatenated as one document
