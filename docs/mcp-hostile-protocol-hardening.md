@@ -124,3 +124,61 @@ one implementation. That is the entire reason a hostile-protocol hardening
 document has to exist: the MCP spec's lack of normative security
 requirements pushes the security burden onto every implementer, and most
 implementers will not carry it.
+
+## Appendix: the October 2026 OAuth/session cluster (2026-10-20)
+
+Three advisories in nine days, one shared shape — **trust placed in
+counterparty-supplied metadata, and fallbacks that authenticate
+nobody**:
+
+- **CVE-2026-104850 / GHSA-6qxp-vccf-f47h** (high, 2026-10-06) —
+  MCP TypeScript SDK: an OAuth client could be steered to send
+  credentials to an authorization server chosen by the MCP server
+  (issuer confusion). Affected `@modelcontextprotocol/sdk`
+  >= 1.12.0 < 1.31.0 and `@modelcontextprotocol/client`
+  >= 2.0.0 < 2.2.0; fixed in 1.31.0 / 2.2.0.
+- **CVE-2026-59822 / GHSA-7488-6r32-c95q** (2026-10-13) —
+  LiteLLM's MCP Streamable HTTP endpoint allowed unauthenticated
+  session establishment through an OAuth2-passthrough fallback: a
+  fabricated `Authorization` header was treated as authenticated.
+  Fixed in LiteLLM 1.84.0.
+- **CVE-2026-59951 / GHSA-84m7-p3x7-pcfv** (medium, 2026-10-15) —
+  MCP Python SDK: unbounded session accumulation in the
+  StreamableHTTP transport allows resource exhaustion.
+
+Two controls follow directly and are adopted here as additions to
+the list above:
+
+7. **Authorization-server identity is pinned, never discovered from
+   the counterparty.** A server may not choose, redirect, or
+   substitute the issuer a client authenticates against
+   (CVE-2026-104850). This is Control 5 applied to identity
+   metadata: the issuer is configuration, not protocol data.
+8. **Authentication has no fallback path, and sessions are a
+   bounded resource.** A failed or absent credential is terminal —
+   never a passthrough to an authenticated session
+   (CVE-2026-59822) — and any stateful transport caps concurrent
+   sessions and expires idle ones (CVE-2026-59951). An
+   unauthenticated peer must not be able to allocate unbounded
+   server state.
+
+**Org exposure, measured 2026-10-20 (code search, not assumed):**
+no repository in the org uses `@modelcontextprotocol/sdk`
+(zero hits org-wide), and the org's MCP servers (EoSim, eFlow,
+eosllm) are stdio transports with no OAuth flow — the
+issuer-confusion and passthrough classes do not reach them as
+built. The one dependency thread, eVera's LiteLLM, was assessed
+the same day: `pyproject.toml` floors it at `>= 1.40` and
+`requirements.txt` at `>= 1.0.0` (floors, not pins — nothing
+holds it below the 1.84.0 fix), `vera.spec` carries no version
+pin, and no code serves LiteLLM's proxy or MCP endpoint.
+CVE-2026-59822 is therefore **assessed, not applicable** to
+eVera as built; it becomes applicable the day any org component
+exposes a LiteLLM proxy endpoint, which is why the control
+belongs here rather than in a per-repo note.
+
+The cluster is also the worked example for the agent fabric's
+gateway evaluation: a gateway is exactly where counterparty
+metadata concentrates, so the gateway inherits Controls 7–8 as
+acceptance criteria, alongside the eNet bridge trial's "no
+unauthenticated fallback path" exit check.
