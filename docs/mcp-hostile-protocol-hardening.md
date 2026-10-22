@@ -182,3 +182,57 @@ gateway evaluation: a gateway is exactly where counterparty
 metadata concentrates, so the gateway inherits Controls 7–8 as
 acceptance criteria, alongside the eNet bridge trial's "no
 unauthenticated fallback path" exit check.
+
+## Appendix: the October 2026 session-binding cluster (2026-10-22)
+
+Two further advisories, published 2026-10-20 and verified
+first-party in GitHub's advisory database on 2026-10-22, share a
+different shape from the OAuth cluster above — **an identifier
+trusted without being bound to its owner**:
+
+- **CVE-2026-111770 / GHSA-jm63-cq47-j5jp** —
+  `@modelcontextprotocol/server` 2.0.0 through 2.2.0, fixed in
+  2.3.0: an HTTP MCP server that shared one stateless transport
+  or one server instance across clients matched responses and
+  notifications to connections by JSON-RPC `id` alone. SDK
+  clients number requests from 0, so ids collide in normal use
+  and one client could receive another's messages. Not affected:
+  stdio servers, per-request server factories, and
+  `@modelcontextprotocol/sdk` 1.26.0 and later.
+- **CVE-2026-111767 / GHSA-22jm-h49p-29qw** —
+  `@modelcontextprotocol/sdk` 1.24.0 through 1.31.0, fixed in
+  1.32.0: the experimental tasks feature's `taskStore` did not
+  check which session created a task, so clients sharing one
+  `InMemoryTaskStore` could list, read, and cancel each other's
+  tasks. Each task is now tied to the session that created it.
+
+One control follows and is adopted here as an addition to the
+list above:
+
+9. **Responses and tasks are bound to the connection that
+   created them.** Routing and lookup are keyed by
+   (connection, id), never by id alone, and task/result stores
+   are session-scoped — one client's objects are not listable,
+   readable, or cancellable by another (CVE-2026-111770,
+   CVE-2026-111767). An identifier is a name inside a scope,
+   not a capability.
+
+**Census correction (2026-10-22).** The exposure line in the
+2026-10-20 appendix above was measured against a single package
+name, `@modelcontextprotocol/sdk`. Re-run on 2026-10-22 (code
+search, org-wide) against all three package names plus the bare
+string: `@modelcontextprotocol/server` — zero hits;
+`@modelcontextprotocol/client` and `@modelcontextprotocol/sdk`
+— two hits each, both this document and its `llms-full.txt`
+(prose mentions, not dependencies); bare `modelcontextprotocol`
+adds one EoSim README mention. **Zero MCP TypeScript SDK
+dependencies exist anywhere in the org under any of the three
+names** — the correction widens the measurement, and the
+conclusion stands.
+
+Control 9 joins Controls 7–8 as an acceptance criterion for the
+agent fabric's gateway evaluation: a gateway that routes by id
+alone, or pools task state across sessions, fails the eval on
+this control. The same keying rule is a design input for eIPC's
+planned zero-copy tensor transport — tensors, like tasks, must
+be keyed by (owner, id), never by id alone.
