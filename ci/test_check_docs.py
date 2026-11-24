@@ -42,5 +42,47 @@ class FencedCodeTest(unittest.TestCase):
         self.assertEqual(self.check(doc), [])
 
 
+class SecurityTxtExpiresTest(unittest.TestCase):
+    def check(self, expires):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "security.txt")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write("Contact: mailto:security@example.org\nExpires: %s\n" % expires)
+            saved = check_docs.SECURITY_TXT
+            check_docs.SECURITY_TXT = path
+            try:
+                return check_docs.check_security_txt()
+            finally:
+                check_docs.SECURITY_TXT = saved
+
+    def test_rfc3339_date_times_pass(self):
+        for value in (
+            "2099-10-04T00:00:00.000Z",
+            "2099-10-04T00:00:00Z",
+            "2099-10-04t00:00:00z",
+            "2099-10-04 00:00:00Z",
+            "2099-10-04T05:30:00+05:30",
+            "2099-10-04T00:00:00.5-08:00",
+        ):
+            self.assertEqual(self.check(value), [], value)
+
+    def test_iso8601_forms_outside_rfc3339_fail(self):
+        for value in (
+            "2099-10-04",  # date only
+            "20991004",  # basic format
+            "2099-W40-1",  # week date
+            "2099-10-04T00",  # no minutes or seconds
+            "2099-10-04T00:00:00",  # no UTC offset
+        ):
+            errors = self.check(value)
+            self.assertEqual(len(errors), 1, value)
+            self.assertIn("is not an RFC 3339 date-time", errors[0])
+
+    def test_past_date_still_fails(self):
+        errors = self.check("2000-01-01T00:00:00Z")
+        self.assertEqual(len(errors), 1)
+        self.assertIn("is in the past", errors[0])
+
+
 if __name__ == "__main__":
     unittest.main()

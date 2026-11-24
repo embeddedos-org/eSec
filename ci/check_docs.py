@@ -11,7 +11,8 @@ Checks (stdlib only):
      resolve to `<page>.md` next to the linking file. Absolute URLs
      (http/https/mailto/...) and pure #anchors are skipped.
   3. .well-known/security.txt carries the RFC 9116 mandatory fields
-     (Contact, Expires) and its Expires date is not in the past. An
+     (Contact, Expires), its Expires value is an RFC 3339 date-time with
+     a UTC offset (RFC 9116 section 2.5.5), and that date is not in the past. An
      expired security.txt silently breaks the CRA reporting path
      documented in docs/cra-reporting.md, so expiry is a hard failure
      here, not a warning that can age unnoticed.
@@ -32,6 +33,12 @@ LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 SECURITY_TXT = os.path.join(REPO_ROOT, ".well-known", "security.txt")
 ABS_URL_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
 FENCE_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+# RFC 3339 section 5.6 date-time: full-date "T" full-time, where full-time
+# ends in a time-offset ("Z" or +hh:mm / -hh:mm). The section 5.6 note
+# allows lower-case t/z and a space in place of the "T".
+RFC3339_DATE_TIME_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2}[Tt ]\d{2}:\d{2}:\d{2}(\.\d+)?([Zz]|[+-]\d{2}:\d{2})$"
+)
 
 
 def doc_files():
@@ -127,13 +134,21 @@ def check_security_txt():
             errors.append("%s: RFC 9116 mandatory field '%s' is missing" % (rel, required))
     raw_expires = fields.get("expires")
     if raw_expires:
+        # datetime.fromisoformat() also takes ISO 8601 forms that RFC 3339
+        # does not (a bare date, a week date, no UTC offset), so match the
+        # RFC 3339 shape first and parse only what passes.
         try:
-            expires = datetime.fromisoformat(raw_expires.replace("Z", "+00:00"))
+            if not RFC3339_DATE_TIME_RE.match(raw_expires):
+                raise ValueError(raw_expires)
+            expires = datetime.fromisoformat(
+                raw_expires.replace("Z", "+00:00").replace("z", "+00:00")
+            )
         except ValueError:
-            errors.append("%s: Expires '%s' is not a parseable RFC 3339 date" % (rel, raw_expires))
+            errors.append(
+                "%s: Expires '%s' is not an RFC 3339 date-time with a UTC "
+                "offset (e.g. 2027-10-04T00:00:00Z)" % (rel, raw_expires)
+            )
             return errors
-        if expires.tzinfo is None:
-            expires = expires.replace(tzinfo=timezone.utc)
         if expires <= datetime.now(timezone.utc):
             errors.append(
                 "%s: Expires %s is in the past — an expired security.txt "
